@@ -15,6 +15,7 @@ import sounddevice as sd
 import soundfile as sf
 import win32com.client
 import tkinter.filedialog
+from screeninfo import get_monitors
 
 class App(tk.Tk):
     """
@@ -25,9 +26,22 @@ class App(tk.Tk):
         """Initializes the main application window and all its components."""
         super().__init__()
 
-        # --- Configure the root window ---
+        # --- Find second monitor (or use primary if only one) ---
+        monitors = get_monitors()
+        if len(monitors) > 1:
+            mon = monitors[1]  # Second monitor
+        else:
+            mon = monitors[0]  # Primary monitor
+
+        # --- Set window size and position ---
+        default_width = 850
+        default_height = 1100
+        double_width = default_width * 2
+        x = mon.x
+        y = mon.y
+
+        self.geometry(f"{double_width}x{default_height}+{x}+{y}")
         self.title("PDF Narrator")
-        self.geometry("850x1100")
 
         # --- Application State Variables ---
         self.doc = None  # Will hold the loaded PyMuPDF document object.
@@ -70,6 +84,13 @@ class App(tk.Tk):
         )
         self.next_button.pack(side=tk.LEFT, padx=5, pady=5)
 
+        self.open_button = ttk.Button(
+            control_frame,
+            text="Open PDF+Script",
+            command=self.open_new_pdf_and_script
+        )
+        self.open_button.pack(side=tk.LEFT, padx=5, pady=5)
+
         self.speed_label = ttk.Label(control_frame, text="Speech Speed")
         self.speed_label.pack(side=tk.LEFT, padx=5, pady=5)
 
@@ -81,36 +102,41 @@ class App(tk.Tk):
         )
         self.speed_slider.pack(side=tk.LEFT, padx=5, pady=5)
 
-        # --- Initial Setup ---
-        # Prompt for PDF file
+        # Narration enable/disable checkbox
+        self.narration_enabled = tk.BooleanVar(value=True)
+        self.narration_checkbox = ttk.Checkbutton(
+            control_frame,
+            text="Enable Narration",
+            variable=self.narration_enabled
+        )
+        self.narration_checkbox.pack(side=tk.LEFT, padx=5, pady=5)
+    def open_new_pdf_and_script(self):
+        """
+        Prompts the user to select a new PDF and JSON script, then reloads them.
+        """
         pdf_path = tkinter.filedialog.askopenfilename(
             title="Select PDF file",
             filetypes=[("PDF files", "*.pdf")]
         )
         if not pdf_path:
-            print("No PDF selected. Exiting.")
-            self.destroy()
+            print("No PDF selected.")
             return
 
-        # Prompt for JSON script file
         script_path = tkinter.filedialog.askopenfilename(
             title="Select narration script (JSON)",
             filetypes=[("JSON files", "*.json")]
         )
         if not script_path:
-            print("No script selected. Exiting.")
-            self.destroy()
+            print("No script selected.")
             return
 
-        # Load the required files
         self.doc = self.load_pdf(pdf_path)
         self.script_data = self.load_script(script_path)
-
-        # Display the first page of the PDF initially (not zoomed).
+        self.current_step = 0
+        self.is_narrating = False
         if self.doc:
             self.display_page(0)
         else:
-            # Display an error if the PDF could not be loaded.
             error_text = f"Failed to load {pdf_path}"
             self.canvas.create_text(425, 550, text=error_text, font=("Arial", 16))
 
@@ -151,59 +177,71 @@ class App(tk.Tk):
             print(f"Error loading script: {e}")
             return None
 
-    def display_page(self, page_num, zoom_rect=None, zoom_factor=2.0):
+    def display_page(self, page_num, zoom_rect=None):
         """
-        Renders a specific region of a PDF page onto the main canvas.
-
-        Args:
-            page_num (int): The 0-indexed page number to display.
-            zoom_rect (list, optional): A list of four coordinates [x0, y0, x1, y1]
-                defining the clip box. Defaults to None (full page).
-            zoom_factor (float, optional): The scaling factor for the zoom.
-                Defaults to 2.0.
+        Renders a specific region of a PDF page onto the main canvas,
+        dynamically calculating the zoom to fit the canvas.
         """
         if not self.doc or page_num >= self.doc.page_count:
             return
 
         page = self.doc.load_page(page_num)
 
-        # Determine the clipping rectangle for the zoom.
-        if zoom_rect is None:
+        # Use the full page if no zoom_rect is provided
+        clip_rect = pymupdf.Rect(zoom_rect) if zoom_rect else page.rect
+
+        # --- DYNAMIC ZOOM CALCULATION ---
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+
+        # To avoid division by zero on first render before canvas is sized
+        if canvas_width == 1 or canvas_height == 1:
+            self.after(100, lambda: self.display_page(page_num, zoom_rect))
+            return
+
+        rect_width = clip_rect.width
+        rect_height = clip_rect.height
+
+        if rect_width <= 0 or rect_height <= 0:
+             # Fallback to full page if rect is invalid
             clip_rect = page.rect
-        else:
-            clip_rect = pymupdf.Rect(zoom_rect)
+            rect_width = clip_rect.width
+            rect_height = clip_rect.height
 
-        # Create a zoom matrix from the zoom factor.
+        zoom_x = canvas_width / rect_width
+        zoom_y = canvas_height / rect_height
+
+        # Use the smaller zoom factor to maintain aspect ratio and fit the whole area
+        zoom_factor = min(zoom_x, zoom_y)
+
         mat = pymupdf.Matrix(zoom_factor, zoom_factor)
-
-        # Render the specified page region to a pixmap (an image).
         pix = page.get_pixmap(matrix=mat, clip=clip_rect)
 
-        # Convert the pixmap to a format Tkinter can use via the Pillow library.
         mode = "RGBA" if pix.alpha else "RGB"
         img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
-
-        # This must be an instance variable to prevent Python's garbage collector
-        # from discarding the image before it's displayed.
         self.tk_img = ImageTk.PhotoImage(img)
 
-        # Update the canvas with the new page image.
         self.canvas.delete("all")
-        self.canvas.create_image(0, 0, anchor='nw', image=self.tk_img)
+        # Center the image on the canvas
+        x_pos = (canvas_width - pix.width) / 2
+        y_pos = (canvas_height - pix.height) / 2
+        self.canvas.create_image(x_pos, y_pos, anchor='nw', image=self.tk_img)
 
     def speak(self, text):
         """
         Speaks the given text using Microsoft Speech Platform (SAPI).
         Speech rate is controlled by self.speed_var.
+        Uses async speech so it can be interrupted.
         """
-        speaker = win32com.client.Dispatch("SAPI.SpVoice")
-        # Example: select the second installed voice
+        if not hasattr(self, 'speaker'):
+            self.speaker = win32com.client.Dispatch("SAPI.SpVoice")
+        speaker = self.speaker
         voices = speaker.GetVoices()
-        # You can use a dropdown to let the user choose
-        speaker.Voice = voices.Item(0)  # Change index for different voices
+        speaker.Voice = voices.Item(0)
         rate = int((self.speed_var.get() - 1.0) * 10)
         speaker.Rate = rate
-        speaker.Speak(text)
+        # Use async flag so we can interrupt
+        speaker.Speak(text, 1)  # 1 = SVSFlagsAsync
 
     def start_narration(self):
         """
@@ -233,24 +271,41 @@ class App(tk.Tk):
 
         self.display_page(
             page_num=step_data['page_number'],
-            zoom_rect=step_data['zoom_rect']
+            zoom_rect=step_data.get('zoom_rect')
         )
         self.update_idletasks()
 
         # Schedule the narration after the pre-speech delay
         self.after(
             step_data['pre_speech_delay_ms'],
-            lambda: self._speak_and_continue(step_data['narration_text'])
+            lambda: self._speak_and_continue(step_data.get('narration_text', ''))
         )
 
     def _speak_and_continue(self, text):
         print(f"Narrating: {text}")
-        self.narration_thread = threading.Thread(target=self._narrate_step, args=(text,), daemon=True)
-        self.narration_thread.start()
+        # Prevent multiple threads
+        if hasattr(self, 'narration_thread') and self.narration_thread and self.narration_thread.is_alive():
+            print("Waiting for previous narration to finish/skipped.")
+            return
+        self._skip_requested = False
+        if self.narration_enabled.get():
+            self.narration_thread = threading.Thread(target=self._narrate_step, args=(text,), daemon=True)
+            self.narration_thread.start()
+        else:
+            self._advance_narration_step()
 
     def _narrate_step(self, text):
         self.speak(text)
-        # Schedule next step on main thread after narration finishes
+        speaker = self.speaker
+        while True:
+            # If skip requested, purge and advance immediately
+            if getattr(self, '_skip_requested', False):
+                speaker.Speak('', 2)  # 2 = SVSFPurgeBeforeSpeak
+                break
+            # If not speaking, narration finished
+            if speaker.Status.RunningState != 2:
+                break
+            time.sleep(0.05)
         self.after(0, self._advance_narration_step)
 
     def _advance_narration_step(self):
@@ -258,7 +313,14 @@ class App(tk.Tk):
         self.process_narration_step()
 
     def skip_narration(self):
-        # Try to stop current narration thread (not possible with playsound, but you can skip to next step)
+        # Signal to skip current narration
+        self._skip_requested = True
+        # Stop SAPI speech immediately
+        if hasattr(self, 'speaker'):
+            try:
+                self.speaker.Speak('', 2)  # 2 = SVSFPurgeBeforeSpeak
+            except Exception as e:
+                print(f"Error stopping speech: {e}")
         self.current_step += 1
         self.process_narration_step()
 

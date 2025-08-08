@@ -1,0 +1,160 @@
+{
+  "narration_steps": [
+    {
+      "step": 1,
+      "page_number": 1,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "This paper introduces Orthrus, a Mamba-based foundation model that learns functionally and evolutionarily coherent representations of mature mRNA sequences. It pioneers a biologically-motivated contrastive learning objective, using splice isoforms and cross-species orthologs as natural data augmentations. The resulting model significantly outperforms larger, more generic genomic foundation models on a suite of mRNA property prediction tasks, particularly in data-scarce regimes."
+    },
+    {
+      "step": 2,
+      "page_number": 2,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "The core problem this paper addresses is the limitation of existing genomic foundation models, which largely borrow techniques from Natural Language Processing. These models struggle with the low diversity and high proportion of non-functional sequences in the genome, leading to inefficient learning and sub-optimal performance. Orthrus proposes a new approach, shifting from sequence reconstruction to learning functional similarity, which is a more biologically relevant task."
+    },
+    {
+      "step": 3,
+      "page_number": 2,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "The historical context for this work begins with early supervised models, followed by the rise of self-supervised models like DNABERT that used masked language modeling. Later, models like HyenaDNA and Evo focused on scaling up to handle longer sequences and more parameters. A parallel track of RNA-specific models like RiNALMo focused on structure prediction. Orthrus carves out a unique niche by applying a novel contrastive learning method specifically to mature mRNA function prediction. The paper is exceptionally clear in its logic, and its novelty lies in synthesizing contrastive learning, biological augmentations from splicing and evolution, and the efficient Mamba architecture. The principal investigators are leaders in the field, with Brendan Frey's prior work on the 'splicing code' and Quaid Morris's expertise in RNA-binding proteins providing a deep foundation for this research, making Orthrus a capstone project of a long-term, multi-lab vision."
+    },
+    {
+      "step": 4,
+      "page_number": 4,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Here in Figure 1, we see an overview of the entire Orthrus framework. Panel A illustrates the core conceptual innovation: constructing a dataset of positive pairs from biologically meaningful variations. Splicing augmentations use different isoforms from the same gene, while orthology augmentations use functionally conserved transcripts from different species, sourced from the Zoonomia Project. Panel B details the training pipeline. A pair of augmented transcripts are passed through a Mamba encoder to generate embeddings. The model then uses a contrastive loss function to maximize the similarity of these positive pairs while minimizing similarity to all other unrelated transcripts in a batch. A key detail is the six-track input, which provides the model with explicit information about splice sites and coding sequences. Panel C outlines the evaluation strategy, which includes both linear probing, to test the raw quality of the embeddings, and full fine-tuning, to assess the model's utility as a transferable backbone for downstream tasks."
+    },
+    {
+      "step": 5,
+      "page_number": 12,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Table 1 quantifies the scale of the pre-training dataset. The full model, combining both Zoonomia and splicing data, was trained on a massive dataset of over 887 million unique positive pairs derived from more than 32 million transcripts. The other rows in the table correspond to the smaller datasets used for the ablation studies, allowing the authors to isolate the specific contributions of the evolutionary and splicing-based data sources."
+    },
+    {
+      "step": 6,
+      "page_number": 5,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Figure 2 presents the key performance results. Panel A shows that the raw Orthrus embeddings are highly predictive of basic structural properties like CDS length and the number of exons, demonstrating that the model has learned a robust representation of transcript architecture. Panel B is a critical benchmark, showing that a simple linear model trained on Orthrus embeddings outperforms or matches not only other foundation models, many of which are hundreds of times larger, but also specialized, fully supervised models. This is a powerful result, suggesting the pre-training is so effective it makes complex supervised training unnecessary for these tasks. Finally, Panel C highlights the model's exceptional data efficiency. In few-shot settings with as few as 30 labeled examples, Orthrus maintains strong performance while traditional methods fail, underscoring its practical utility for biological research where data is often scarce."
+    },
+    {
+      "step": 7,
+      "page_number": 14,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Table 2 provides an overview of the comprehensive set of tasks used to evaluate Orthrus. The benchmark covers a wide range of mRNA properties, including stability, translation, localization, and regulatory interactions. It includes both regression and classification tasks, uses data from different experimental platforms, and covers both human and mouse, ensuring a rigorous and multifaceted test of the model's capabilities. The use of homology-aware data splitting for all tasks is a critical detail ensuring that the reported performance reflects true generalization."
+    },
+    {
+      "step": 8,
+      "page_number": 7,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Figure 3 details the comprehensive ablation study that deconstructs the model's performance. The results are clear. First, the contrastive learning objective is the main driver of performance, significantly outperforming masked language modeling, although a combination of the two is optimal. Second, the biological augmentations are critical; models trained without them perform poorly, and both splicing and orthology data contribute significantly to the final performance. Finally, the Mamba architecture itself is shown to be superior to parameter-matched CNN and Saluki-like baselines. This study rigorously demonstrates that every key design choice in the Orthrus framework is a meaningful contributor to its success."
+    },
+    {
+      "step": 9,
+      "page_number": 8,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Figure 4 moves beyond prediction to probe the model's functional understanding. Panel B confirms that the embedding space is organized in a biologically sensible way. Panel C shows that embedding similarity correlates better with functional protein domain similarity than with simple sequence similarity. The most compelling evidence comes from panels E through G. Here we see examples where Orthrus similarity diverges from sequence overlap but correctly aligns with functional and structural similarity, as validated by AlphaFold3 protein structure predictions. For example, in panel E, two isoforms of IQCF6 have very similar coding sequences, but Orthrus predicts they are functionally distinct, a prediction confirmed by their vastly different 3D structures. This shows the model has learned a sophisticated, function-aware representation of RNA."
+    },
+    {
+      "step": 10,
+      "page_number": 10,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Figure 5 provides case studies demonstrating that the functional clustering seen in Figure 4 works on well-known biological examples. In Panel A, the model correctly separates the functionally antagonistic isoforms of the BCL2L1 gene, clustering the apoptosis-inhibiting isoforms together and away from the apoptosis-promoting one. In Panel B, it correctly clusters the two major isoforms of OAS1, which have distinct antiviral functions due to a subtle sequence change that affects post-translational modification. These examples show that the Orthrus embeddings can capture fine-grained functional differences between splice isoforms."
+    },
+    {
+      "step": 11,
+      "page_number": 11,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "The paper concludes that Orthrus's novel, biologically-motivated pre-training strategy produces a highly efficient and effective foundation model for mature RNA. The model's representations are not only predictive of a wide range of cellular properties but also capture the nuanced functional diversity among splice isoforms. This work validates a new approach for building genomic models that prioritizes biological inductive biases, paving the way for true few-shot learning in genomics and enabling new avenues of research into isoform-level function."
+    },
+    {
+      "step": 12,
+      "page_number": 11,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "While the study is comprehensive, several experiments could further define the model's capabilities. For instance, its performance on non-mammalian species, other classes of non-coding RNA, and direct RNA structure prediction tasks remain open questions. Furthermore, as an encoder-only model, Orthrus lacks generative capabilities. Future work could involve using its powerful embeddings to guide a generative model for designing novel RNA sequences with desired functions."
+    },
+    {
+      "step": 13,
+      "page_number": 11,
+      "bounding_box": [
+        72,
+        845,
+        1095,
+        1070
+      ],
+      "pre_speech_delay_ms": 1200,
+      "narration_text": "Ultimately, the paper presents Orthrus as a significant advance. It provides a powerful, off-the-shelf tool for the research community and demonstrates a new, more efficient paradigm for building foundation models in biology. By successfully integrating deep biological principles with state-of-the-art machine learning, Orthrus brings us closer to a truly predictive understanding of the RNA regulatory code."
+    }
+  ]
+}

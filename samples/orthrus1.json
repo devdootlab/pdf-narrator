@@ -1,0 +1,158 @@
+{
+  "narration_steps": [
+    {
+      "narration_text": "This paper introduces Orthrus, a new foundation model designed specifically for mature RNA sequences. Unlike previous genomic models that borrow training methods from natural language processing, Orthrus employs a novel, biologically-inspired contrastive learning objective. This method trains the model to recognize functional and evolutionary similarities by maximizing the embedding similarity between related RNA pairs, specifically splice isoforms and orthologous transcripts from over 400 mammalian species. The result is a highly efficient and powerful model that significantly outperforms existing approaches in predicting diverse mRNA properties, demonstrates remarkable data efficiency in low-data scenarios, and is capable of discerning the distinct biological functions of individual transcript isoforms.",
+      "page_number": 0,
+      "zoom_rect": [
+        5,
+        5,
+        845,
+        1095
+      ],
+      "pre_speech_delay_ms": 750
+    },
+    {
+      "narration_text": "This paper represents a New Finding in the field of computational genomics. It moves away from the prevailing trend of applying generic, text-derived self-supervised methods like Masked Language Modeling (MLM) to genomic sequences. Instead, it proposes a new training paradigm rooted in fundamental biological principles: the functional and evolutionary relationships between RNA molecules.",
+      "page_number": 0,
+      "zoom_rect": [
+        5,
+        5,
+        845,
+        1095
+      ],
+      "pre_speech_delay_ms": 750
+    },
+    {
+      "narration_text": "The authors make a clear case for why a new approach is needed. They argue that the high redundancy and low information content of much of the genome make direct application of NLP methods inefficient. The logic of the paper is exceptionally clear, progressing from the introduction of the method (Figure 1), to comprehensive benchmarking (Figure 2), rigorous justification of design choices through ablations (Figure 3), and finally, a demonstration of the model's ability to uncover deep biological insights into isoform function (Figures 4 and 5). This work does not appear to be a rehash of previous work by other groups; on the contrary, it directly challenges the prevailing methodology and offers a compelling, domain-specific alternative.",
+      "page_number": 0,
+      "zoom_rect": [
+        5,
+        5,
+        845,
+        1095
+      ],
+      "pre_speech_delay_ms": 750
+    },
+    {
+      "narration_text": "This research addresses a holy grail question in biology: how to predict the function of a biological sequence from its primary structure alone. For decades, since the discovery of the genetic code, scientists have sought to understand the 'second genetic code' that governs gene regulation, RNA processing, and stability. This paper is a direct and sophisticated response to the latest trend of adapting large language models to genomics. It argues that by embedding core biological knowledge—specifically, the functional constraints revealed by alternative splicing and the conservation patterns revealed by evolution—into the model's training objective, Orthrus represents a more tailored and potent approach to understanding the language of RNA.",
+      "page_number": 0,
+      "zoom_rect": [
+        5,
+        5,
+        845,
+        1095
+      ],
+      "pre_speech_delay_ms": 750
+    },
+    {
+      "narration_text": "OK. That's enough of the background. Now we're going to talk about the next figure -- Figure 1. This figure provides a schematic overview of the Orthrus model and its methodology. Panel A illustrates the core concept of 'biological augmentations' for contrastive learning, using splice isoforms and orthologous transcripts as related positive pairs. Panel B details the training pipeline, where the model learns to pull the embeddings of these related pairs closer together. Panel C shows the evaluation strategy, applying the trained model to various mRNA property prediction tasks and visualizing the resulting structured latent space.",
+      "page_number": 3,
+      "zoom_rect": [
+        13,
+        -2,
+        840,
+        965
+      ],
+      "pre_speech_delay_ms": 1200
+    },
+    {
+      "narration_text": "OK. That's enough of the last figure. Now we're going to talk about the next figure -- Figure 2. This figure presents the core benchmarking results, demonstrating Orthrus's superior performance. Panel A shows the raw embeddings are highly predictive of basic transcript properties. Panel B is a large bar chart showing that on eight different tasks, Orthrus variants generally outperform a wide range of other foundation and supervised models. Panel C uses radial plots to highlight Orthrus's remarkable data efficiency, showing it maintains strong performance even with very few training samples.",
+      "page_number": 4,
+      "zoom_rect": [
+        -2,
+        -2,
+        867,
+        878
+      ],
+      "pre_speech_delay_ms": 1200
+    },
+    {
+      "narration_text": "OK. That's enough of the last figure. Now we're going to talk about the next figure -- Figure 3. This figure presents a systematic ablation study to dissect which components of Orthrus contribute to its success. Panel A uses a heatmap of Z-scores to show that the best performance comes from a combined Contrastive Learning and Masked Language Modeling objective, using both splicing and orthology data, and a Mamba architecture. Panel B provides the raw performance data for full transparency, showing the actual metrics and variance behind the Z-scores.",
+      "page_number": 6,
+      "zoom_rect": [
+        -9,
+        -11,
+        877,
+        807
+      ],
+      "pre_speech_delay_ms": 1200
+    },
+    {
+      "narration_text": "OK. That's enough of the last figure. Now we're going to talk about the next figure -- Figure 4. This figure investigates whether Orthrus embeddings capture true functional similarity beyond simple sequence identity. Panel C is a key result, showing that Orthrus embedding similarity has a significantly higher correlation with protein domain similarity than other metrics. Panels E through G provide powerful case studies, using AlphaFold-predicted structures to validate the model's ability to identify functional similarity or divergence even when it contradicts simple sequence overlap.",
+      "page_number": 7,
+      "zoom_rect": [
+        -8,
+        -9,
+        853,
+        902
+      ],
+      "pre_speech_delay_ms": 1200
+    },
+    {
+      "narration_text": "OK. That's enough of the last figure. Now we're going to talk about the next figure -- Figure 5. This figure demonstrates Orthrus's ability to cluster splice isoforms by their known biological functions. In Panel A, for the BCL2L1 gene, Orthrus correctly separates isoforms into their distinct anti- and pro-apoptotic functional groups. In Panel B, for the OAS1 gene, it correctly clusters isoforms that have different antiviral functions and subcellular localizations. These case studies highlight the model's potential for de-novo functional annotation of isoforms.",
+      "page_number": 9,
+      "zoom_rect": [
+        -11,
+        -2,
+        855,
+        963
+      ],
+      "pre_speech_delay_ms": 1200
+    },
+    {
+      "narration_text": "That's enough of the last figure. Now we're going to talk about the tables. -- Table 1. This table provides an overview of the contrastive datasets used for pre-training and the ablation studies. It quantifies the number of unique transcript pairs and total unique transcripts generated from different combinations of data sources, including Zoonomia Eutheria (orthologs) and Gencode Splicing (isoforms). The full dataset combines both, resulting in over 887 million unique positive pairs from over 32 million transcripts, highlighting the massive scale of the pre-training data.",
+      "page_number": 11,
+      "zoom_rect": [
+        -2,
+        34,
+        838,
+        809
+      ],
+      "pre_speech_delay_ms": 1200
+    },
+    {
+      "narration_text": "OK. That's enough of the last table. Now we're going to talk about the next table -- Table 2. This table summarizes the eight downstream evaluation datasets used for benchmarking all the models. For each task, such as 'RNA Half Life Human' or 'Protein Localization,' it details the task category (regression or classification), the number of unique sequences, the maximum sequence length, and the species. This serves as a useful reference for the scope and diversity of the evaluation suite.",
+      "page_number": 13,
+      "zoom_rect": [
+        -14,
+        420,
+        848,
+        1252
+      ],
+      "pre_speech_delay_ms": 1200
+    },
+    {
+      "narration_text": "The paper's top conclusions are robust and well-supported by the presented data. First, biologically-informed pre-training is superior to generic methods. Second, Orthrus learns powerful representations that can outperform specialized models even with simple linear probing. Third, it is exceptionally data-efficient, making it ideal for biology's common low-data scenarios. Finally, and perhaps most importantly, the model discerns true isoform function, separating transcripts by their roles in processes like apoptosis and immunity. The main implication is that Orthrus could dramatically accelerate research where labeled data is scarce, such as in therapeutic discovery and functional genomics.",
+      "page_number": 0,
+      "zoom_rect": [
+        5,
+        5,
+        845,
+        1095
+      ],
+      "pre_speech_delay_ms": 750
+    },
+    {
+      "narration_text": "While the paper is comprehensive, two experiments could further strengthen its claims. First, one could test deeper evolutionary divergence by including orthologs from non-mammalian species to see if this improves the model's ability to find deeply conserved elements. Second, one could adapt Orthrus to predict DNA-based regulatory phenomena, such as the effect of intronic variants on splicing, to create a head-to-head comparison with DNA-based models on their home turf.",
+      "page_number": 0,
+      "zoom_rect": [
+        5,
+        5,
+        845,
+        1095
+      ],
+      "pre_speech_delay_ms": 750
+    },
+    {
+      "narration_text": "The paper presents Orthrus, a novel RNA foundation model, and makes a powerful case for its methodology. The authors' big-picture objective was to create a more biologically plausible, efficient, and predictive model by moving beyond generic NLP techniques. The data presented in the figures and tables unequivocally support their conclusions. The rigorous benchmarking, insightful ablation studies, and compelling case studies on isoform function demonstrate that the model's performance and capabilities directly reflect the paper's central claims. Orthrus represents a significant advance in the field of computational genomics and provides a valuable new tool for the biological research community.",
+      "page_number": 0,
+      "zoom_rect": [
+        5,
+        5,
+        845,
+        1095
+      ],
+      "pre_speech_delay_ms": 750
+    }
+  ]
+}
