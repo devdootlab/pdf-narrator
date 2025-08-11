@@ -51,9 +51,11 @@ class App(tk.Tk):
         self.is_narrating = False  # A flag to prevent multiple narrations from starting.
 
         # --- Layout Frames ---
+        # Main frame for the PDF canvas, allowing it to expand.
         main_frame = ttk.Frame(self)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
+        # Control frame for buttons at the bottom.
         control_frame = ttk.Frame(self)
         control_frame.pack(fill=tk.X)
 
@@ -92,7 +94,7 @@ class App(tk.Tk):
         self.speed_label = ttk.Label(control_frame, text="Speech Speed")
         self.speed_label.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.speed_var = tk.DoubleVar(value=1.5)
+        self.speed_var = tk.DoubleVar(value=1.5)  # This maps to +5
         self.speed_slider = ttk.Scale(
             control_frame,
             from_=0.5, to=2.0, variable=self.speed_var,
@@ -100,6 +102,7 @@ class App(tk.Tk):
         )
         self.speed_slider.pack(side=tk.LEFT, padx=5, pady=5)
 
+        # Narration enable/disable checkbox
         self.narration_enabled = tk.BooleanVar(value=True)
         self.narration_checkbox = ttk.Checkbutton(
             control_frame,
@@ -107,7 +110,6 @@ class App(tk.Tk):
             variable=self.narration_enabled
         )
         self.narration_checkbox.pack(side=tk.LEFT, padx=5, pady=5)
-
     def open_new_pdf_and_script(self):
         """
         Prompts the user to select a new PDF and JSON script, then reloads them.
@@ -128,10 +130,6 @@ class App(tk.Tk):
             print("No script selected.")
             return
 
-        self.load_files(pdf_path, script_path)
-
-    def load_files(self, pdf_path, script_path):
-        """Loads the PDF and script files."""
         self.doc = self.load_pdf(pdf_path)
         self.script_data = self.load_script(script_path)
         self.current_step = 0
@@ -139,13 +137,18 @@ class App(tk.Tk):
         if self.doc:
             self.display_page(0)
         else:
-            self.canvas.delete("all")
             error_text = f"Failed to load {pdf_path}"
             self.canvas.create_text(425, 550, text=error_text, font=("Arial", 16))
 
     def load_pdf(self, filepath):
         """
         Opens a PDF file using PyMuPDF and returns the document object.
+
+        Args:
+            filepath (str): The path to the PDF file.
+
+        Returns:
+            pymupdf.Document or None: The opened document object, or None if an error occurs.
         """
         try:
             doc = pymupdf.open(filepath)
@@ -158,9 +161,15 @@ class App(tk.Tk):
     def load_script(self, filepath):
         """
         Opens and parses a JSON narration script.
+
+        Args:
+            filepath (str): The path to the JSON script file.
+
+        Returns:
+            dict or None: A dictionary containing the parsed JSON data, or None if an error occurs.
         """
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, 'r') as f:
                 data = json.load(f)
                 print(f"Successfully loaded script: {filepath}")
                 return data
@@ -177,10 +186,10 @@ class App(tk.Tk):
             return
 
         page = self.doc.load_page(page_num)
-        
+
         # Use the full page if no zoom_rect is provided
         clip_rect = pymupdf.Rect(zoom_rect) if zoom_rect else page.rect
-        
+
         # --- DYNAMIC ZOOM CALCULATION ---
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
@@ -201,10 +210,10 @@ class App(tk.Tk):
 
         zoom_x = canvas_width / rect_width
         zoom_y = canvas_height / rect_height
-        
+
         # Use the smaller zoom factor to maintain aspect ratio and fit the whole area
         zoom_factor = min(zoom_x, zoom_y)
-        
+
         mat = pymupdf.Matrix(zoom_factor, zoom_factor)
         pix = page.get_pixmap(matrix=mat, clip=clip_rect)
 
@@ -222,23 +231,22 @@ class App(tk.Tk):
         """
         Speaks the given text using Microsoft Speech Platform (SAPI).
         Speech rate is controlled by self.speed_var.
+        Uses async speech so it can be interrupted.
         """
-        try:
-            speaker = win32com.client.Dispatch("SAPI.SpVoice")
-            voices = speaker.GetVoices()
-            if voices.Count > 0:
-                speaker.Voice = voices.Item(0)
-            
-            rate = int((self.speed_var.get() - 1.25) * 8)
-            speaker.Rate = rate
-            
-            speaker.Speak(text)
-        except Exception as e:
-            print(f"Error initializing speech engine: {e}")
+        if not hasattr(self, 'speaker'):
+            self.speaker = win32com.client.Dispatch("SAPI.SpVoice")
+        speaker = self.speaker
+        voices = speaker.GetVoices()
+        speaker.Voice = voices.Item(0)
+        rate = int((self.speed_var.get() - 1.0) * 10)
+        speaker.Rate = rate
+        # Use async flag so we can interrupt
+        speaker.Speak(text, 1)  # 1 = SVSFlagsAsync
 
     def start_narration(self):
         """
         Begins the narration process from the first step.
+        Runs the narration loop using Tkinter's event loop.
         """
         if self.is_narrating or not self.script_data:
             return
@@ -255,7 +263,7 @@ class App(tk.Tk):
         if not self.is_narrating or self.current_step >= len(self.script_data['narration_steps']):
             print("--- Narration Finished ---")
             self.is_narrating = False
-            self.display_page(0)
+            self.display_page(0)  # Reset to the full first page view
             return
 
         step_data = self.script_data['narration_steps'][self.current_step]
@@ -267,68 +275,66 @@ class App(tk.Tk):
         )
         self.update_idletasks()
 
+        # Schedule the narration after the pre-speech delay
         self.after(
             step_data['pre_speech_delay_ms'],
-            lambda: self._speak_and_continue(step_data['narration_text'])
+            lambda: self._speak_and_continue(step_data.get('narration_text', ''))
         )
 
     def _speak_and_continue(self, text):
+        print(f"Narrating: {text}")
+        # Prevent multiple threads
+        if hasattr(self, 'narration_thread') and self.narration_thread and self.narration_thread.is_alive():
+            print("Waiting for previous narration to finish/skipped.")
+            return
+        self._skip_requested = False
         if self.narration_enabled.get():
-            print(f"Narrating: {text[:80]}...")
             self.narration_thread = threading.Thread(target=self._narrate_step, args=(text,), daemon=True)
             self.narration_thread.start()
         else:
-            self.after(1000, self._advance_narration_step)
+            self._advance_narration_step()
 
     def _narrate_step(self, text):
         self.speak(text)
+        speaker = self.speaker
+        while True:
+            # If skip requested, purge and advance immediately
+            if getattr(self, '_skip_requested', False):
+                speaker.Speak('', 2)  # 2 = SVSFPurgeBeforeSpeak
+                break
+            # If not speaking, narration finished
+            if speaker.Status.RunningState != 2:
+                break
+            time.sleep(0.05)
         self.after(0, self._advance_narration_step)
 
     def _advance_narration_step(self):
-        if self.is_narrating:
-            self.current_step += 1
-            self.process_narration_step()
+        self.current_step += 1
+        self.process_narration_step()
 
     def skip_narration(self):
-        """Skips the current speaking part and moves to the next step."""
-        if self.is_narrating:
-            self.current_step += 1
-            self.stop_narration()
-            self.after(100, self.process_narration_step)
-
-    def stop_narration(self):
-        """Stops the narration loop."""
-        print("--- Narration Stopped ---")
-        self.is_narrating = False
+        # Signal to skip current narration
+        self._skip_requested = True
+        # Stop SAPI speech immediately
+        if hasattr(self, 'speaker'):
+            try:
+                self.speaker.Speak('', 2)  # 2 = SVSFPurgeBeforeSpeak
+            except Exception as e:
+                print(f"Error stopping speech: {e}")
+        # Do NOT increment current_step or call process_narration_step here
+        # The narration thread will handle advancing the step
 
     def next_figure(self):
-        """Advances to the next step that involves a page change."""
-        if not self.script_data:
-            return
-        
-        current_page = self.script_data['narration_steps'][self.current_step]['page_number']
-        
-        # Find the next step with a different page number that is not the title page
-        next_step_index = self.current_step + 1
-        while next_step_index < len(self.script_data['narration_steps']):
-            next_page = self.script_data['narration_steps'][next_step_index]['page_number']
-            if next_page != current_page and next_page != 0:
-                self.current_step = next_step_index
-                if self.is_narrating:
-                    self.stop_narration()
-                    self.after(100, self.process_narration_step)
-                else:
-                    self.process_narration_step()
-                return
-            next_step_index += 1
-        
-        print("No subsequent figure found.")
+        self.current_step += 1
+        self.process_narration_step()
 
+    def list_voices(self):
+        speaker = win32com.client.Dispatch("SAPI.SpVoice")
+        for voice in speaker.GetVoices():
+            print(voice.GetDescription())
 
+# The standard Python entry point. This block ensures the code inside
+# only runs when the script is executed directly from the command line.
 if __name__ == "__main__":
     app = App()
-    try:
-        app.load_files("2024.10.10.617658v3.full.pdf", "orthrus1.json")
-    except Exception as e:
-        print(f"Could not auto-load files on startup: {e}")
     app.mainloop()
